@@ -9,17 +9,16 @@ import (
 	"os"
 )
 
-func OpenDemo(demoName string, matchID primitive.ObjectID, taskID primitive.ObjectID) {
+func OpenDemo(demoName string, matchID primitive.ObjectID, taskID primitive.ObjectID) error {
 	f, err := os.Open("files/" + demoName)
 	if err != nil {
 		log.Panic("failed to open demo file: ", err)
 	}
-	/*defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
+	defer func() {
+		if err := f.Close(); err != nil {
 			log.Panic("failed to close demo file: ", err)
 		}
-	}(f)*/
+	}()
 
 	p := dem.NewParser(f)
 	defer func(p dem.Parser) {
@@ -45,8 +44,8 @@ func OpenDemo(demoName string, matchID primitive.ObjectID, taskID primitive.Obje
 		if e.PenetratedObjects > 0 {
 			wallBang = " (WB)"
 		}
-		fmt.Printf("%s is %s", e.Killer, e.Killer.Position())
-		fmt.Printf("%s <%v%s%s> %s\n", e.Killer, e.Weapon, hs, wallBang, e.Victim)
+		//fmt.Printf("%s is %s", e.Killer, e.Killer.Position())
+		fmt.Printf("%s <%v%s%s> %s\n", e.Killer.Name, e.Weapon, hs, wallBang, e.Victim.Name)
 	})
 
 	p.RegisterEventHandler(func(e events.RoundEnd) {
@@ -58,20 +57,20 @@ func OpenDemo(demoName string, matchID primitive.ObjectID, taskID primitive.Obje
 	if err != nil {
 		err := UpdateTask(taskID, "failed")
 		if err != nil {
-			return
+			return err
 		}
-		log.Panic("failed to parse demo: ", err)
+		log.Fatalf("failed to parse demo: %v", err)
 	}
 
-	err = UpdateTask(taskID, "completed")
-	if err != nil {
-		return
+	if err := UpdateTask(taskID, "completed"); err != nil {
+		log.Printf("Failed to update task status to completed: %v", err)
 	}
 
-	// TODO: remove file after parsing
-	/*err2 := os.Remove("files/" + demoName)
-	if err2 != nil {
-		print(err2)
-		return
-	}*/
+	defer func() {
+		err := os.Remove("files/" + demoName)
+		if err != nil {
+			log.Printf("failed to remove demo file: %v", err)
+		}
+	}()
+	return nil
 }

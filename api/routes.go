@@ -4,7 +4,9 @@ import (
 	"api-demo-viewer/internal"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
+	"time"
 )
 
 func Ping(c *gin.Context) {
@@ -14,7 +16,12 @@ func Ping(c *gin.Context) {
 }
 
 func UploadDemo(c *gin.Context) {
-	file, _ := c.FormFile("file")
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "failed to retrieve file",
+		})
+	}
 	if internal.CheckFile(file) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "something went wrong!",
@@ -22,9 +29,9 @@ func UploadDemo(c *gin.Context) {
 		return
 	}
 	newFileName := uuid.New().String() + ".dem"
-	err := c.SaveUploadedFile(file, "./files/"+newFileName)
-	if err != nil {
-		print(err)
+	errFile := c.SaveUploadedFile(file, "./files/"+newFileName)
+	if errFile != nil {
+		print(errFile)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to save file",
 		})
@@ -40,7 +47,17 @@ func UploadDemo(c *gin.Context) {
 		return
 	}
 
-	go internal.OpenDemo(newFileName, matchID, taskID)
+	errCh := make(chan error)
+	go func() {
+		errCh <- internal.OpenDemo(newFileName, matchID, taskID)
+	}()
+
+	go func() {
+		err := <-errCh
+		if err != nil {
+			log.Printf("error while parsing demo: %v", err)
+		}
+	}()
 
 	c.Redirect(http.StatusCreated, "/match/"+matchID.String())
 }
@@ -67,6 +84,6 @@ func GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"taskId":     taskId,
 		"status":     "done",
-		"created_at": "2021-09-23",
+		"created_at": time.Now().Date(),
 	})
 }
