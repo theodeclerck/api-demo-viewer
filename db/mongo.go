@@ -13,9 +13,10 @@ import (
 const Dbname = "demo-viewer"
 
 type MongoCollections struct {
-	Matches *mongo.Collection
-	Users   *mongo.Collection
-	Tasks   *mongo.Collection
+	Matches    *mongo.Collection
+	Users      *mongo.Collection
+	Tasks      *mongo.Collection
+	MatchTicks *mongo.Collection
 }
 
 var Collections *MongoCollections

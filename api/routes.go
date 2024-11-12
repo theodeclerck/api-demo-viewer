@@ -49,7 +49,7 @@ func UploadDemo(c *gin.Context) {
 
 	errCh := make(chan error)
 	go func() {
-		errCh <- internal.OpenDemo(newFileName, matchID, taskID)
+		errCh <- internal.NewGame(newFileName, matchID, taskID)
 	}()
 
 	go func() {
@@ -84,6 +84,6 @@ func GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"taskId":     taskId,
 		"status":     "done",
-		"created_at": time.Now().Date(),
+		"created_at": time.Now(),
 	})
 }

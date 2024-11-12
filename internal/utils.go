@@ -39,7 +39,7 @@ func CheckFile(file *multipart.FileHeader) bool {
 }
 
 func CheckFileSize(file *multipart.FileHeader) bool {
-	if file.Size > 1024*1024*500 { // 500MB
+	if file.Size > 1024*1024*1000 { // 1GB
 		print("file size is too big")
 		return false
 	}
@@ -122,4 +122,26 @@ func UpdateTask(taskID primitive.ObjectID, status string) error {
 		return err
 	}
 	return nil
+}
+
+func CreateGame(game *Game) error {
+	doc := prepareGameDocument(game)
+
+	_, err := db.Collections.MatchTicks.InsertMany(
+		context.Background(),
+		doc,
+	)
+	if err != nil {
+		print(err)
+		return err
+	}
+	return nil
+}
+
+func prepareGameDocument(game *Game) []interface{} {
+	var doc []interface{}
+	for _, state := range game.States {
+		doc = append(doc, state)
+	}
+	return doc
 }
